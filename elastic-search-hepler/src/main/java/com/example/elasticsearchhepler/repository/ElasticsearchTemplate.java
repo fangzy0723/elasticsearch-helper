@@ -205,9 +205,9 @@ public interface ElasticsearchTemplate<T extends BaseEsEntity, M> {
 
     /**
      * scroll方式查询(默认了保留时间为DEFAULT_SCROLL_TIME)
-     *
+     * map>result:为结果集
+     * map>scrollId:为scrollId
      * @param queryBuilder
-     * @param clazz
      * @return
      * @throws Exception
      */
@@ -215,10 +215,11 @@ public interface ElasticsearchTemplate<T extends BaseEsEntity, M> {
 
     /**
      * scroll方式查询
+     * map>result:为结果集
+     * map>scrollId:为scrollId
      *
      * @param queryBuilder
-     * @param clazz
-     * @param time         保留小时
+     * @param time         查询上下文有效时间 设置合理满足查询数据的时间即可,单位是分钟
      * @return
      * @throws Exception
      */

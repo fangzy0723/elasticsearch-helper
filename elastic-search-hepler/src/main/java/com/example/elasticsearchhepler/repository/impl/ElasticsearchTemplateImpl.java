@@ -61,8 +61,8 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
     private static final int DEFALT_PAGE_SIZE = 200;
     //搜索建议默认条数
     private static final int COMPLETION_SUGGESTION_SIZE = 10;
-    //SCROLL 查询上下文有效时间 默认给5分钟
-    private static final long DEFAULT_SCROLL_TIME = 5;
+    //SCROLL 查询上下文有效时间 默认给10分钟
+    private static final long DEFAULT_SCROLL_TIME = 10;
     //SCROLL查询 每页默认条数
     private static final int DEFAULT_SCROLL_PERPAGE = 100;
     //默认编码
@@ -102,9 +102,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             }
             log.info("文档执行save方法，返回结果：{}",JSON.toJSONString(response));
             return EmptyUtil.isNotEmpty(response.getResult());
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("文档id:{} 索引到ES出错 出错原因：",t.getId(),e);
-            return false;
+            throw new BizException(0,"索引到ES出错 出错原因："+e.getMessage());
         }
     }
 
@@ -133,7 +133,7 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             return elasticSearchHelpUtils.convertBulkResponseResult(bulkResponse);
         } catch (IOException e) {
             log.error("文档批量索引到ES出错 出错原因：",e);
-            return Collections.emptyList();
+            throw new BizException(0,"文档批量索引到ES出错 出错原因："+e.getMessage());
         }
     }
 
@@ -156,9 +156,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
                 return false;
             }
             return deleteResponse.getResult() == DocWriteResponse.Result.DELETED;
-        }catch (Exception e){
-            log.error("根据id：{}删除文档出错 出错原因：",id.toString(),e);
-            return false;
+        }catch (IOException e){
+            log.error("根据id：{}删除文档出错 出错原因：",id,e);
+            throw new BizException(0,"删除文档出错 出错原因："+e.getMessage());
         }
     }
 
@@ -179,9 +179,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
             log.info("文档执行批量删除操作，返回结果：{}",JSON.toJSONString(bulkResponse));
             return elasticSearchHelpUtils.convertBulkResponseResult(bulkResponse);
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("根据id集合：{}批量删除文档出错 出错原因：",ids,e);
-            return Collections.emptyList();
+            throw new BizException(0,"批量删除文档出错 出错原因："+e.getMessage());
         }
     }
 
@@ -211,7 +211,7 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             return bulkResponse.getDeleted();
         } catch (IOException e) {
             log.error("根据查询条件删除文档出错出错 出错原因：",e);
-            return 0L;
+            throw new BizException(0,"根据查询条件删除文档出错出错 出错原因："+e.getMessage());
         }
     }
 
@@ -230,8 +230,8 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             log.info("String:"+getResponse.getSourceAsString());
             return JSON.parseObject(getResponse.getSourceAsString(), clazz);
         } catch (IOException e) {
-            log.error("根据id：{}查询文档出错 出错原因：",id.toString(),e);
-            return null;
+            log.error("根据id：{}查询文档出错 出错原因：",id,e);
+            throw new BizException(0,"根据ID查询文档出错 出错原因："+e.getMessage());
         }
     }
 
@@ -261,9 +261,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
                 }
             }
             return list;
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("根据ids：{}查询文档出错 出错原因：",ids,e);
-            return Collections.emptyList();
+            throw new BizException(0,"批量查询文档出错 出错原因："+e.getMessage());
         }
     }
 
@@ -275,9 +275,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
         GetRequest getRequest = new GetRequest(elasticSearchHelpUtils.getIndexName(clazz), id.toString());
         try {
             return client.exists(getRequest, RequestOptions.DEFAULT);
-        }catch (Exception e){
-            log.error("根据ids：{}查询文档是否存在 出错原因：",id,e);
-            return false;
+        }catch (IOException e){
+            log.error("根据id：{}查询文档是否存在 出错原因：",id,e);
+            throw new BizException(0,"根据ID查询文档是否存在出错 出错原因："+e.getMessage());
         }
     }
 
@@ -298,9 +298,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             UpdateResponse updateResponse = client.update(updateRequest, RequestOptions.DEFAULT);
             log.info("文档执行修改方法，返回结果：{}",JSON.toJSONString(updateResponse));
             return EmptyUtil.isNotEmpty(updateResponse.getResult());
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("根据id：{}修改文档出错 出错原因：",t.getId(),e);
-            return false;
+            throw new BizException(0,"修改文档出错出错 出错原因："+e.getMessage());
         }
     }
 
@@ -339,9 +339,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
         try {
             BulkByScrollResponse bulkByScrollResponse = client.updateByQuery(request, RequestOptions.DEFAULT);
             return bulkByScrollResponse.getUpdated();
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("根据查询条件修改文档出错 出错原因：",e);
-            return 0L;
+            throw new BizException(0,"根据查询条件修改文档出错 出错原因："+e.getMessage());
         }
     }
 
@@ -363,8 +363,8 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             return client.search(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
             log.error("根据查询条件查询文档出错 出错原因：",e);
+            throw new BizException(0,"根据查询条件查询文档出错 出错原因："+e.getMessage());
         }
-        return null;
     }
 
     /**
@@ -380,8 +380,8 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             return count.getCount();
         } catch (IOException e) {
             log.error("根据查询条件统计总数出错 出错原因：",e);
+            throw new BizException(0,"根据查询条件统计总数出错 出错原因："+e.getMessage());
         }
-        return 0L;
     }
 
     /**
@@ -411,9 +411,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
                 list.add(JSON.parseObject(hit.getSourceAsString(), clazz));
             }
             return list;
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("根据查询条件查询结果出错 出错原因：",e);
-            return Collections.emptyList();
+            throw new BizException(0,"根据查询条件查询结果出错 出错原因："+e.getMessage());
         }
     }
 
@@ -449,9 +449,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             pageInfo.setTotal(hits.getTotalHits().value);
             pageInfo.setPages(elasticSearchHelpUtils.getTotalPages(hits.getTotalHits().value, pageSize));
             return pageInfo;
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("根据查询条件查询结果出错 出错原因：",e);
-            return null;
+            throw new BizException(0,"根据查询条件查询结果出错 出错原因："+e.getMessage());
         }
 
     }
@@ -484,9 +484,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
                 }
             }
             return list;
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("使用completionSuggest搜索推荐内容出错 搜索字段名：{} 搜索字段值：{} 错误原因：{}",fieldName,fieldValue,e);
-            return Collections.emptyList();
+            throw new BizException(0,"搜索推荐内容出错 搜索字段名："+fieldName+" 搜索字段值："+fieldValue+" 出错原因："+e.getMessage());
         }
 
     }
@@ -519,9 +519,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             }
 
             return list.stream().filter(EmptyUtil::isNotEmpty).distinct().collect(Collectors.toList());
-        }catch (Exception e){
+        }catch (IOException e){
             log.error("使用completionSearchAsYouType搜索推荐内容出错 搜索字段名：{} 搜索字段值：{} 错误原因：{}",fieldName,fieldValue,e);
-            return Collections.emptyList();
+            throw new BizException(0,"搜索推荐内容出错 搜索字段名："+fieldName+" 搜索字段值："+fieldValue+" 出错原因："+e.getMessage());
         }
     }
 
@@ -566,9 +566,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
         try {
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
             return getMapResult(searchResponse,clazz);
-        }catch (Exception e) {
+        }catch (IOException e) {
             log.error("使用Scroll查询内容出错 错误原因：",e);
-            return Collections.emptyMap();
+            throw new BizException(0,"使用Scroll查询内容出错 出错原因："+e.getMessage());
         }
     }
 
@@ -588,9 +588,9 @@ public class ElasticsearchTemplateImpl<T extends BaseEsEntity, M> implements Ela
             scrollRequest.scroll(scroll);
             SearchResponse searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
             return getMapResult(searchResponse,clazz);
-        }catch (Exception e){
-            log.error("使用Scroll查询内容出错 错误原因：",e);
-            return Collections.emptyMap();
+        }catch (IOException e){
+            log.error("使用Scroll_ID查询内容出错 错误原因：",e);
+            throw new BizException(0,"使用Scroll_ID查询内容出错 出错原因："+e.getMessage());
         }
     }
 
