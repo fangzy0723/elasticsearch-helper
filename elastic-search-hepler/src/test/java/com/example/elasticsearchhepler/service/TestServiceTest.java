@@ -30,7 +30,7 @@ public class TestServiceTest {
 
         TestIndexAutoEntity entity = new TestIndexAutoEntity();
         entity.setId("3");
-        entity.setUserName("北京大学");
+        entity.setUserName("北京大学0");
         entity.setUserTitle("北京大学");
         entity.setUserScore(20.22);
         entity.setWeight(50.2F);
