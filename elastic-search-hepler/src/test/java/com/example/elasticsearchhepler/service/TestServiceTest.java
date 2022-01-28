@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.example.elasticsearchhepler.entity.TestIndexAutoEntity;
 import com.example.elasticsearchhepler.exception.BizException;
 import com.example.elasticsearchhepler.utils.EmptyUtil;
+import org.elasticsearch.client.Node;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -24,6 +26,20 @@ public class TestServiceTest {
 
     @Resource
     private TestIndexAutoService testIndexAutoService;
+
+    @Resource
+    private RestHighLevelClient restHighLevelClient;
+
+    @Test
+    void sniffer() throws Exception {
+
+        List<Node> nodes = restHighLevelClient.getLowLevelClient().getNodes();
+        System.out.println(nodes);
+        Thread.sleep(6000);
+
+        nodes = restHighLevelClient.getLowLevelClient().getNodes();
+        System.out.println(nodes);
+    }
 
     @Test
     void save() throws BizException {

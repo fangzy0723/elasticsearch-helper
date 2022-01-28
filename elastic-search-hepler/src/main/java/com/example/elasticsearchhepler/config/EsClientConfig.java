@@ -10,6 +10,8 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.sniff.SniffOnFailureListener;
+import org.elasticsearch.client.sniff.Sniffer;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,9 +48,23 @@ public class EsClientConfig {
             credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
             builder.setHttpClientConfigCallback(f -> f.setDefaultCredentialsProvider(credentialsProvider));
         }
+
+        SniffOnFailureListener sniffOnFailureListener = new SniffOnFailureListener();
+
         builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                 .setConnectTimeout(5000)
-                .setSocketTimeout(150000));
-        return new RestHighLevelClient(builder);
+                .setSocketTimeout(150000))
+                //设置嗅探失败的监听器
+                .setFailureListener(sniffOnFailureListener);
+
+        RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
+
+        Sniffer sniffer = Sniffer.builder(restHighLevelClient.getLowLevelClient())
+                .setSniffIntervalMillis(5000)//嗅探间隔时间 默认5分钟
+                .setSniffAfterFailureDelayMillis(30000)//嗅探失败的时候每隔多久嗅探一次
+                .build();
+
+        sniffOnFailureListener.setSniffer(sniffer);
+        return restHighLevelClient;
     }
 }
